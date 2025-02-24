@@ -14,13 +14,17 @@ import itertools
 
 class LocationOptimizer:
     def __init__(self, 
-                 base_input: dict, 
+                 base_input: dict | str, 
                  workdir: str, 
                  mesh_path_h5: str,
                  mesh_path_exo: Optional[str] = None, 
                  initial_state_path: Optional[str] = None):
         self._make_dirs(workdir)
         self.mesh = lm.mesh(mesh_path_h5)
+        if isinstance(base_input, str):
+            with open(base_input, "r") as f:
+                base_input = json.load(f)
+
         initial_base_input = deepcopy(base_input)
 
         # this call modifies the input to use files in the local directory
@@ -293,15 +297,17 @@ class LocationOptimizer:
 
     def _generate_info_df(self, meta: List[dict]) -> DataFrame:
         df = DataFrame(meta)
-        df["source_x"] = df.source_coords.apply(lambda x: x[0])
-        df["source_y"] = df.source_coords.apply(lambda x: x[1])
-        df["source_z"] = df.source_coords.apply(lambda x: x[2])
-        del df["source_coords"]
+        if "source_coords" in df.columns:
+            df["source_x"] = df.source_coords.apply(lambda x: x[0])
+            df["source_y"] = df.source_coords.apply(lambda x: x[1])
+            df["source_z"] = df.source_coords.apply(lambda x: x[2])
+            del df["source_coords"]
         
-        df["sink_x"] = df.sink_coords.apply(lambda x: x[0])
-        df["sink_y"] = df.sink_coords.apply(lambda x: x[1])
-        df["sink_z"] = df.sink_coords.apply(lambda x: x[2])
-        del df["sink_coords"]
+        if "sink_coords" in df.columns:
+            df["sink_x"] = df.sink_coords.apply(lambda x: x[0])
+            df["sink_y"] = df.sink_coords.apply(lambda x: x[1])
+            df["sink_z"] = df.sink_coords.apply(lambda x: x[2])
+            del df["sink_coords"]
 
         return df
 
