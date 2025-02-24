@@ -76,7 +76,7 @@ class LocationOptimizer:
 
     def moving_sink(self,
                 rate: float,
-                cells: Optional[List[int]],
+                cells: Optional[List[int]] = None,
                 coordinates_file: Optional[str] = None
             ) -> None:
         """
@@ -86,6 +86,8 @@ class LocationOptimizer:
         Every iteration adds an entry to the sink_terms list. When the run list is finalized the product of 
         the source_terms and sink_terms is used to generate the full list of runs
         """
+        if (cells is None) and (coordinates_file is None):
+            raise ValueError("Missing cell information. Provide either cells: List[int] or coordinates_file: str argument")
         if coordinates_file:
             cells = self._cells_from_file(coordinates_file)
 
@@ -125,6 +127,9 @@ class LocationOptimizer:
         file should contain three comma separated numbers per line, representing the X, Y and Z
         coordinates of the source in the mesh in meters.
         """
+        if (cells is None) and (coordinates_file is None):
+            raise ValueError("Missing cell information. Provide either cells: List[int] or coordinates_file: str argument")
+
         if coordinates_file:
             cells = self._cells_from_file(coordinates_file)
 
