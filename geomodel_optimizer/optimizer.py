@@ -63,10 +63,20 @@ class LocationOptimizer:
         
         self.run_params.append(params)
 
-    def add_sink(self, params: dict, cell: int | List[int], rate: float, component: str = "water") -> None:
+    def add_sink(self, 
+                 params: dict, 
+                 rate: float, 
+                 cell: Optional[int] = None, 
+                 location: Optional[Tuple[int]] = None,
+                 component: str = "water",
+                 ) -> None:
         """
-        Add a sink at the provided cells. Modifies `params` in place.
+        Add a sink at the provided cell. Modifies `params` in place.
         """
+        if (cell is None) and (location is None):
+            raise ValueError("Must supply either cell or location for sink")
+        if cell is None:
+            cell = self.mesh.find(location) 
         try:
             sources = params["source"]
         except KeyError:
@@ -107,15 +117,30 @@ class LocationOptimizer:
             }
             self.sink_terms.append(sink_meta)
 
-    def permanent_sink(self, cell: int, rate: float, component: str = "water") -> bool:
-        self.add_sink(cell=cell, rate=rate, params=self.base_input, component=component)
+    def permanent_sink(self, 
+                       rate: float, 
+                       cell: Optional[int] = None, 
+                       location: Optional[Tuple[int]] = None,
+                       component: str = "water"
+                       ) -> bool:
+        self.add_sink(cell=cell, location=location, rate=rate, params=self.base_input, component=component)
         return True
 
-    def permanent_source(self, cell: int, rate: float, enthalpy: float = 84.9e3, component: str = "water") -> bool:
-        self.add_source(cell=cell, rate=rate, params=self.base_input, enthalpy=enthalpy, component=component)
+    def permanent_source(self, 
+                         rate: float, 
+                         cell: Optional[int] = None, 
+                         location: Optional[Tuple[int]] = None,
+                         enthalpy: float = 84.9e3, 
+                         component: str = "water"
+                         ) -> bool:
+        self.add_source(cell=cell, location=location, rate=rate, params=self.base_input, enthalpy=enthalpy, component=component)
         return True # TODO why this return
 
-    def add_source(self, params: dict, cell: int | List[int], rate: float, enthalpy=84.9e3, component="water") -> None:
+    def add_source(self, params: dict, cell: int, rate: float, enthalpy=84.9e3, component="water") -> None:
+        if (cell is None) and (location is None):
+            raise ValueError("Must supply either cell or location for sink")
+        if cell is None:
+            cell = self.mesh.find(location) 
         try:
             sources = params["source"]
         except KeyError:
