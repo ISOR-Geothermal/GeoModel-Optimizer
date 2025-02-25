@@ -104,6 +104,14 @@ class LocationOptimizer:
             }
             self.sink_terms.append(sink_meta)
 
+    def permanent_sink(self, cell: int, rate: float) -> bool:
+        self.add_sink(cell=cell, rate=rate, params=self.base_input)
+        return True
+
+    def permanent_source(self, cell: int, rate: float, enthalpy: float = 84.9e3) -> bool:
+        self.add_source(cell=cell, rate=rate, params=self.base_input, enthalpy=enthalpy)
+        return True # TODO why this return
+
     def add_source(self, params: dict, cell: int | List[int], rate: float, enthalpy=84.9e3, component="water") -> None:
         try:
             sources = params["source"]
