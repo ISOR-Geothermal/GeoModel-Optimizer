@@ -63,7 +63,7 @@ class LocationOptimizer:
         
         self.run_params.append(params)
 
-    def add_sink(self, params: dict, cell: int | List[int], rate: float) -> None:
+    def add_sink(self, params: dict, cell: int | List[int], rate: float, component: str = "water") -> None:
         """
         Add a sink at the provided cells. Modifies `params` in place.
         """
@@ -73,7 +73,8 @@ class LocationOptimizer:
             sources = []
         new_source = {
             "cell": cell,
-            "rate": -abs(rate) # ensure negative
+            "rate": -abs(rate), # ensure negative
+            "component": component
         }
         sources.append(new_source)
         params["sources"] = sources
@@ -81,7 +82,8 @@ class LocationOptimizer:
     def moving_sink(self,
                 rate: float,
                 cells: Optional[List[int]] = None,
-                coordinates_file: Optional[str] = None
+                coordinates_file: Optional[str] = None,
+                component: str = "water"
             ) -> None:
         """
         TODO
@@ -101,15 +103,16 @@ class LocationOptimizer:
                 "sink_rate": rate,
                 "sink_coords": self.mesh.cell[sink_cell].centre,
                 "sink_name": f"sink_{sink_cell}",
+                "sink_component": component
             }
             self.sink_terms.append(sink_meta)
 
-    def permanent_sink(self, cell: int, rate: float) -> bool:
-        self.add_sink(cell=cell, rate=rate, params=self.base_input)
+    def permanent_sink(self, cell: int, rate: float, component: str = "water") -> bool:
+        self.add_sink(cell=cell, rate=rate, params=self.base_input, component=component)
         return True
 
-    def permanent_source(self, cell: int, rate: float, enthalpy: float = 84.9e3) -> bool:
-        self.add_source(cell=cell, rate=rate, params=self.base_input, enthalpy=enthalpy)
+    def permanent_source(self, cell: int, rate: float, enthalpy: float = 84.9e3, component: str = "water") -> bool:
+        self.add_source(cell=cell, rate=rate, params=self.base_input, enthalpy=enthalpy, component=component)
         return True # TODO why this return
 
     def add_source(self, params: dict, cell: int | List[int], rate: float, enthalpy=84.9e3, component="water") -> None:
@@ -128,7 +131,7 @@ class LocationOptimizer:
 
     def moving_source(self, 
                 rate: float,
-                enthalpy: float,
+                enthalpy: float = 83.9e3,
                 cells: Optional[List[int]] = None,
                 component: str = "water",
                 coordinates_file: Optional[str] = None,
