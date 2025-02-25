@@ -136,7 +136,14 @@ class LocationOptimizer:
         self.add_source(cell=cell, location=location, rate=rate, params=self.base_input, enthalpy=enthalpy, component=component)
         return True # TODO why this return
 
-    def add_source(self, params: dict, cell: int, rate: float, enthalpy=84.9e3, component="water") -> None:
+    def add_source(self, 
+                   params: dict, 
+                   rate: float, 
+                   cell: Optional[int] = None, 
+                   location: Optional[Tuple[int]] = None,
+                   enthalpy=84.9e3, 
+                   component="water"
+                   ) -> None:
         if (cell is None) and (location is None):
             raise ValueError("Must supply either cell or location for sink")
         if cell is None:
