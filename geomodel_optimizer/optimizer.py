@@ -363,8 +363,9 @@ class LocationOptimizer:
         params["logfile"]["filename"] = log_name.as_posix()
 
     def _sequential_run(self, nproc=4) -> bool:
-        for run_index, path in tqdm(enumerate(self.run_file_paths)):
-            run = self._single_run(path, nproc=nproc, run_index=run_index, total=len(self.run_file_paths)
+        total = len(self.run_file_paths)
+        for run_index, path in tqdm(enumerate(self.run_file_paths), total=total):
+            run = self._single_run(path, nproc=nproc, run_index=run_index)
             self.runs.append(run)
         return True
 
@@ -393,7 +394,8 @@ class LocationOptimizer:
             raise ValueError("TODO no meta")
         calculated_loss = []
         for run in self.runs:
-            loss = run.execute_function(loss_function)
+            # loss = run.execute_function(loss_function)
+            loss = loss_function(run)
             calculated_loss.append(loss)
         self.meta["loss"] = calculated_loss
     
