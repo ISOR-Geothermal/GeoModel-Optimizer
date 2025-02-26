@@ -112,7 +112,7 @@ class WaiweraRun:
         return mesh
 
     def __repr__(self):
-        r = f"Run [{self.timestamp}]"
+        r = f"WaiweraRun [{self.timestamp}]"
         return r
     
     @staticmethod
