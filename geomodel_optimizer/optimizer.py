@@ -363,14 +363,18 @@ class LocationOptimizer:
         params["logfile"]["filename"] = log_name.as_posix()
 
     def _sequential_run(self, nproc=4) -> bool:
-        for path in tqdm(self.run_file_paths):
-            run = self._single_run(path, nproc=nproc)
+        for run_index, path in tqdm(enumerate(self.run_file_paths)):
+            run = self._single_run(path, nproc=nproc, run_index=run_index, total=len(self.run_file_paths)
             self.runs.append(run)
         return True
 
-    def _single_run(self, path: str, nproc: int = 4) -> WaiweraRun:
+    def _single_run(self, path: str, nproc: int = 4, run_index: Optional[int] = None) -> WaiweraRun:
         with nostdout():
-            run = WaiweraRun.run_from_file(path, num_processes=nproc)
+            if run_index is not None:
+                meta = self.meta.iloc[run_index].to_dict()
+            else:
+                meta = {}
+            run = WaiweraRun.run_from_file(path, num_processes=nproc, meta=meta)
         return run
 
     def _parallel_run(self, pool_size=4, nproc=1):
@@ -414,7 +418,7 @@ class LocationOptimizer:
             'step': {
                 'size': step_size,
                 'adapt': {'on': False},
-                'maximum': {'number': n_steps + 1}
+                'maximum': {'number': n_steps}
             },
             'stop': step_size * n_steps
         }
