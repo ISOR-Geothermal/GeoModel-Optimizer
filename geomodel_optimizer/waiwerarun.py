@@ -5,7 +5,7 @@ import numpy as np
 import pywaiwera
 import json
 import shutil
-from typing import Tuple, Optional, List, Callable
+from typing import Tuple, Optional, List, Callable, Any
 import os, sys
 from pathlib import Path
 from copy import deepcopy
@@ -18,7 +18,6 @@ from pandas import Timestamp
 
 class WaiweraRun:
     def __init__(self, params, json_file, temperature, pressure, timestamp, meta: dict | None = None):
-        # self.params = params.copy()
         self.params = deepcopy(params)
         self.json_file = json_file
         self.temperature = temperature.copy()
@@ -41,7 +40,7 @@ class WaiweraRun:
                           happened yet, or it could mean the path specified is wrong")
 
     @classmethod
-    def run_from_file(cls, json_file: str, num_processes=2):
+    def run_from_file(cls, json_file: str, num_processes=2, meta: Optional[dict] = None):
         timestamp = Timestamp.now()
 
         env = pywaiwera.docker.DockerEnv()
@@ -54,7 +53,7 @@ class WaiweraRun:
         t = cls.get_temperature(h5_name, -1)
         p = cls.get_pressure(h5_name, -1)
 
-        run = WaiweraRun(params, json_file, t, p, timestamp)
+        run = WaiweraRun(params, json_file, t, p, timestamp, meta=meta)
         return run
 
     @classmethod
@@ -63,8 +62,9 @@ class WaiweraRun:
         with open(json_file, "w") as f:
             json.dump(params, f, indent=4)
             
-        env = pywaiwera.docker.DockerEnv()
-        env.run_waiwera(json_file, noupdate=True, num_processes=num_processes)
+        with nostdout():
+            env = pywaiwera.docker.DockerEnv()
+            env.run_waiwera(json_file, noupdate=True, num_processes=num_processes)
         
         h5_name = params["output"]["filename"]
         t = cls.get_temperature(h5_name, -1)
@@ -96,7 +96,7 @@ class WaiweraRun:
         self.mesh.slice_plot("x", axes=ax1, value=data)
         self.mesh.layer_plot(depth, value=data, axes=ax2)
     
-    def execute_function(self, function: Callable) -> 'Undefined':
+    def execute_function(self, function: Callable) -> Any:
         """
         Execute a callable `function` that takes an open h5py.File as input
         """
@@ -108,8 +108,7 @@ class WaiweraRun:
             mesh_filename = str(mesh_path).replace(".exo", ".h5")
         else:
             mesh_filename = str(mesh_path)
-        print(mesh_filename)
-        mesh = lm.mesh(str(mesh_filename))
+        mesh = lm.mesh(str(mesh_filename)) # TODO
         return mesh
 
     def __repr__(self):
@@ -137,6 +136,9 @@ class WaiweraRun:
 
 class NullOutput:
     def write(self, x):
+        pass
+
+    def flush(self):
         pass
 
 
