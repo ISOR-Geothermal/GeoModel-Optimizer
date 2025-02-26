@@ -76,7 +76,7 @@ class LocationOptimizer:
         if (cell is None) and (location is None):
             raise ValueError("Must supply either cell or location for sink")
         if cell is None:
-            cell = self.mesh.find(location) 
+            cell = self.mesh.find(location).index
         try:
             sources = params["source"]
         except KeyError:
@@ -147,7 +147,7 @@ class LocationOptimizer:
         if (cell is None) and (location is None):
             raise ValueError("Must supply either cell or location for sink")
         if cell is None:
-            cell = self.mesh.find(location) 
+            cell = self.mesh.find(location).index
         try:
             sources = params["source"]
         except KeyError:
