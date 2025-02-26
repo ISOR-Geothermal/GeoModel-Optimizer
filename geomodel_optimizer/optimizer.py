@@ -41,7 +41,9 @@ class LocationOptimizer:
         self.run_file_paths: List[str] = [] # path to json files directly run by waiwera
         self.runs: List[WaiweraRun] = [] # completed runs
 
-    def add_run(self, 
+        self.YEAR_IN_SECONDS = 365 * 24 * 3600
+
+    def add_run(self,  # TODO add support for component terms
                 source_idx: Optional[int] = None, 
                 sink_idx: Optional[int] = None, 
                 source_rate: Optional[float] = None,
@@ -55,11 +57,11 @@ class LocationOptimizer:
         params = deepcopy(self.base_input)
         if sink_idx is not None: # sink_idx can be 0
             assert sink_rate is not None, f"must provide a sink rate along with sink_idx {sink_idx}"
-            self.add_sink(params, sink_idx, sink_rate)
+            self.add_sink(params=params, cell=sink_idx, rate=sink_rate)
         
         if source_idx is not None:
             assert source_rate is not None, f"must provide a source rate along with source_idx {source_idx}"
-            self.add_source(params, source_idx, source_rate, enthalpy=source_enthalpy)
+            self.add_source(params=params, cell=source_idx, rate=source_rate, enthalpy=source_enthalpy)
         
         self.run_params.append(params)
 
@@ -401,3 +403,19 @@ class LocationOptimizer:
         """
         self.output_run_files()
         self._sequential_run(nproc=nproc)
+
+    def adjust_timesteps(self, step_size: int, n_steps: int) -> None:
+        """
+        Adjust the timesteps for the production simulation. Disables adaptable timestepping.
+        step_size : int time step in seconds
+        n_steps : int number of time steps
+        """
+        time = {
+            'step': {
+                'size': step_size,
+                'adapt': {'on': False},
+                'maximum': {'number': n_steps + 1}
+            },
+            'stop': step_size * n_steps
+        }
+        self.base_input["time"] = time
