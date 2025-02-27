@@ -43,7 +43,7 @@ class LocationOptimizer:
 
         self.YEAR_IN_SECONDS = 365 * 24 * 3600
 
-    def add_run(self,  # TODO add support for component terms
+    def add_run(self, 
                 source_idx: Optional[int] = None, 
                 sink_idx: Optional[int] = None, 
                 source_rate: Optional[float] = None,
@@ -54,7 +54,7 @@ class LocationOptimizer:
                 **unused
                 ) -> None:
         if (source_idx is None) and (sink_idx is None):
-            raise ValueError("TODO both cant be none") # TODO raise warning instead?
+            raise ValueError("Must have at least a source or a sink")
         
         params = deepcopy(self.base_input)
         if sink_idx is not None: # sink_idx can be 0
@@ -199,28 +199,36 @@ class LocationOptimizer:
         """
         Read coords from file and turn them into cell indexes. Each line in the input file should 
         contain one 3d coordinate. Ignore lines commented out with "#"
-
-        TODO warn user about duplicate cells? Warn about coordinates mismatch? (cell.centre vs input)
         """
-        coordinates: List[float] = []
-
-        with open(file_path) as f:
-            for line in f.readlines():
-                if "#" in line:
-                    continue
-                line_coords = tuple([float(i) for i in line.split(",")])
-                coordinates.append(line_coords)
-
-        cell_indexes = self._cells_from_coords(coordinates)
-        return cell_indexes
-
-    def _cells_from_coords(self, coords: List[Tuple[float]]) -> List[int]:
         cells = []
-        for c in coords:
-            if len(c) != 3:
-                raise ValueError("TODO need 3d coord")
-            cell = self.mesh.find(c)
+        cell_lines = {}
+        with open(file_path) as f:
+            lines = f.readlines()
+
+        for i, line in enumerate(lines):
+            if "#" in line:
+                continue
+
+            try:
+                line_coords = tuple([float(i) for i in line.split(",")])
+                assert len(line_coords) == 3
+            except:
+                warnings.warn(f"could not convert line {i+1} to 3D coordinates: {line}")
+                continue
+                
+            cell = self.mesh.find(line_coords)
+            if cell is None:
+                warnings.warn(f"could not match coordinates from line {i+1} [{line}] with a cell in the mesh")
+                continue
+
+            if cell.index in cells:
+                line_number = cell_lines[cell.index]
+                warnings.warn(f"cell matching location in line {i+1} is already included from line {line_number}, ignoring")
+                continue
+
             cells.append(cell.index)
+            cell_lines[cell.index] = i + 1 # save the line number 
+
         return cells
         
     def _make_dirs(self, workdir: str):
