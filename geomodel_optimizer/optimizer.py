@@ -49,6 +49,8 @@ class LocationOptimizer:
                 source_rate: Optional[float] = None,
                 sink_rate: Optional[float] = None, 
                 source_enthalpy: float = 84e3,
+                source_component: str = "water",
+                sink_component: str = "water",
                 **unused
                 ) -> None:
         if (source_idx is None) and (sink_idx is None):
@@ -57,11 +59,11 @@ class LocationOptimizer:
         params = deepcopy(self.base_input)
         if sink_idx is not None: # sink_idx can be 0
             assert sink_rate is not None, f"must provide a sink rate along with sink_idx {sink_idx}"
-            self.add_sink(params=params, cell=sink_idx, rate=sink_rate)
+            self.add_sink(params=params, cell=sink_idx, rate=sink_rate, component=sink_component)
         
         if source_idx is not None:
             assert source_rate is not None, f"must provide a source rate along with source_idx {source_idx}"
-            self.add_source(params=params, cell=source_idx, rate=source_rate, enthalpy=source_enthalpy)
+            self.add_source(params=params, cell=source_idx, rate=source_rate, enthalpy=source_enthalpy, component=source_component)
         
         self.run_params.append(params)
 
