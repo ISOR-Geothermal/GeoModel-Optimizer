@@ -234,7 +234,7 @@ class LocationOptimizer:
     def _make_dirs(self, workdir: str):
         wd = Path(workdir)
         if wd.is_absolute():
-            raise ValueError("TODO path cannot be absolute")
+            raise ValueError("workdir path cannot be absolute, must be a subdir")
         wd.mkdir(exist_ok=True, parents=True)
         json_dir = wd / "json"
         output_dir = wd / "outputs"
@@ -262,7 +262,7 @@ class LocationOptimizer:
             mesh_exo_path = Path(mesh_exo_path)
 
         if not mesh_exo_path.exists():
-            raise FileNotFoundError("TODO could not find mesh h5 file")
+            raise FileNotFoundError(f"could not find mesh .exo file at {mesh_exo_path}")
         shutil.copy(mesh_exo_path, self.input_dir)
         shutil.copy(mesh_h5_path, self.input_dir)
 
@@ -276,7 +276,7 @@ class LocationOptimizer:
             initial_state_path = Path(initial_state_path)
         
         if not initial_state_path.exists():
-            raise FileNotFoundError("TODO could not find state file")
+            raise FileNotFoundError(f"could not find initial state file at {initial_state_path}")
         shutil.copy(initial_state_path, self.input_dir)
         
         relative_state_file = self.input_dir / initial_state_path.name
