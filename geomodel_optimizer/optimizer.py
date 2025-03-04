@@ -53,6 +53,44 @@ class LocationOptimizer:
                 sink_component: str = "water",
                 **unused
                 ) -> None:
+        """
+        Adds a run configuration to the simulation by defining a source, a sink, or both.
+
+        Parameters:
+        -----------
+        source_idx : Optional[int], default=None
+            The index of the source cell. Must be provided along with `source_rate` if a source is specified.
+        sink_idx : Optional[int], default=None
+            The index of the sink cell. Must be provided along with `sink_rate` if a sink is specified.
+        source_rate : Optional[float], default=None
+            The flow rate at the source. Required if `source_idx` is specified. Units are kg/s if component is "water", 
+            or J/s if component is "energy"
+        sink_rate : Optional[float], default=None
+            The flow rate at the sink. Required if `sink_idx` is specified. Units are kg/s if component is "water", 
+            or J/s if component is "energy"
+        source_enthalpy : float, default=84e3
+            The enthalpy of the fluid entering through the source (J/kg).
+        source_component : str, default="water"
+            Component type at the source, "water" or "energy".
+        sink_component : str, default="water"
+            Component type at the sink, "water" or "energy".
+        **unused : dict
+            Additional unused keyword arguments.
+
+        Raises:
+        -------
+        ValueError:
+            If neither `source_idx` nor `sink_idx` is provided.
+        AssertionError:
+            If `source_idx` is provided without `source_rate`, or `sink_idx` is provided without `sink_rate`.
+
+        Notes:
+        ------
+        - The function deep copies `self.base_input` to create a new parameter set.
+        - If a sink is specified, it is added using `self.add_sink()`.
+        - If a source is specified, it is added using `self.add_source()`.
+        - The modified parameters are appended to `self.run_params`.
+        """
         if (source_idx is None) and (sink_idx is None):
             raise ValueError("Must have at least a source or a sink")
         
@@ -75,7 +113,29 @@ class LocationOptimizer:
                  component: str = "water",
                  ) -> None:
         """
-        Add a sink at the provided cell. Modifies `params` in place.
+        Adds a sink to the simulation at a specified cell or location.
+
+        Modifies the `params` dictionary in place by appending a new sink entry.
+
+        Parameters:
+        -----------
+        params : dict
+            The simulation parameters dictionary that will be modified to include the sink.
+        rate : float
+            The flow rate at the sink. The function ensures this value is stored as a negative. Units are kg/s if component is "water", 
+            or J/s if component is "energy"
+        cell : Optional[int], default=None
+            The index of the cell where the sink is added. If not provided, `location` must be specified.
+        location : Optional[Tuple[int]], default=None
+            The spatial coordinates of the sink. If `cell` is not given, the function attempts to find the cell index
+            corresponding to this location using `self.mesh.find(location).index`.
+        component : str, default="water"
+            Component being extracted, "water" or "energy".
+
+        Raises:
+        -------
+        ValueError:
+            If neither `cell` nor `location` is provided.
         """
         if (cell is None) and (location is None):
             raise ValueError("Must supply either cell or location for sink")
@@ -100,11 +160,28 @@ class LocationOptimizer:
                 component: str = "water"
             ) -> None:
         """
-        TODO
-        Adds sink in every cell provided in `cells` list. 
-        # Every iteration adds a parameter dict to the optimizer object's run_params list. 
-        Every iteration adds an entry to the sink_terms list. When the run list is finalized the product of 
-        the source_terms and sink_terms is used to generate the full list of runs
+        Adds a moving sink to the simulation, defined by a list of cells or coordinates from a file.
+
+        Parameters:
+        -----------
+        rate : float
+            The flow rate of the sink. Units are kg/s if component is "water", or J/s if component is "energy".
+        cells : Optional[List[int]], default=None
+            A list of cell indices where a sink will be simulated. Either this or `coordinates_file` must be provided.
+        coordinates_file : Optional[str], default=None
+            A file containing spatial coordinates for determining the sink locations. Overrides `cells` argument.
+        component : str, default="water"
+            "water" or "energy"
+
+        Raises:
+        -------
+        ValueError:
+            If neither `cells` nor `coordinates_file` is provided.
+
+        Notes:
+        ------
+        - If `coordinates_file` is given, the function uses `self._cells_from_file()` to extract the corresponding cells.
+        - The function iterates through the `cells` list, adding metadata for each sink to `self.sink_terms`.
         """
         if (cells is None) and (coordinates_file is None):
             raise ValueError("Missing cell information. Provide either cells: List[int] or coordinates_file: str argument")
@@ -127,6 +204,29 @@ class LocationOptimizer:
                        location: Optional[Tuple[int]] = None,
                        component: str = "water"
                        ) -> bool:
+        """
+        Adds a permanent sink to the simulation.
+
+        This function calls `self.add_sink()` to modify `self.base_input` in place, ensuring that the sink remains
+        for the entire duration of the simulation.
+
+        Parameters:
+        -----------
+        rate : float
+            The flow rate of the sink. Units are kg/s if component is "water", or J/s if component is "energy".
+        cell : Optional[int], default=None
+            The index of the cell where the sink is added. If not provided, `location` must be specified.
+        location : Optional[Tuple[int]], default=None
+            The spatial coordinates of the sink. If `cell` is not given, the function attempts to determine the cell
+            from `location` using `self.mesh.find(location)`.
+        component : str, default="water"
+            "water" or "energy"
+
+        Returns:
+        --------
+        bool
+            Always returns `True` after successfully adding the sink.
+        """
         self.add_sink(cell=cell, location=location, rate=rate, params=self.base_input, component=component)
         return True
 
@@ -137,6 +237,29 @@ class LocationOptimizer:
                          enthalpy: float = 84.9e3, 
                          component: str = "water"
                          ) -> bool:
+        """
+        Adds a permanent source to the simulation.
+
+        This function calls `self.add_source()` to modify `self.base_input` in place, ensuring that the source remains
+        for the entire duration of the simulation.
+
+        Parameters:
+        -----------
+        rate : float
+            The flow rate of the source. Units are kg/s if component is "water", or J/s if component is "energy".
+        cell : Optional[int], default=None
+            The index of the cell where the source is added. If not provided, `location` must be specified.
+        location : Optional[Tuple[int]], default=None
+            The spatial coordinates of the source. If `cell` is not given, the function attempts to determine the cell
+            from `location` using `self.mesh.find(location)`.
+        component : str, default="water"
+            "water" or "energy"
+
+        Returns:
+        --------
+        bool
+            Always returns `True` after successfully adding the source.
+        """
         self.add_source(cell=cell, location=location, rate=rate, params=self.base_input, enthalpy=enthalpy, component=component)
         return True # TODO why this return
 
@@ -148,6 +271,30 @@ class LocationOptimizer:
                    enthalpy=84.9e3, 
                    component="water"
                    ) -> None:
+        """
+        Adds a source to the simulation at a specified cell or location.
+
+        Modifies the `params` dictionary in place by appending a new source entry.
+
+        Parameters:
+        -----------
+        params : dict
+            The simulation parameters dictionary that will be modified to include the source.
+        rate : float
+            The flow rate of the source. Units are kg/s if component is "water", or J/s if component is "energy".
+        cell : Optional[int], default=None
+            The index of the cell where the source is added. If not provided, `location` must be specified.
+        location : Optional[Tuple[int]], default=None
+            The spatial coordinates of the source. If `cell` is not given, the function attempts to find the cell index
+            corresponding to this location using `self.mesh.find(location)`.
+        component : str, default="water"
+            "water" or "energy"
+
+        Raises:
+        -------
+        ValueError:
+            If neither `cell` nor `location` is provided.
+        """
         if (cell is None) and (location is None):
             raise ValueError("Must supply either cell or location for sink")
         if cell is None:
@@ -173,10 +320,29 @@ class LocationOptimizer:
                 coordinates_file: Optional[str] = None,
             ) -> None:
         """
-        Add a simulation with a source in each of the cells defined in `cells`. If a file 
-        is specified with `coordinates_file`, the cells will be read from there instead. The 
-        file should contain three comma separated numbers per line, representing the X, Y and Z
-        coordinates of the source in the mesh in meters.
+        Adds a moving source to the simulation, defined by a list of cells or coordinates from a file.
+
+        Parameters:
+        -----------
+        rate : float
+            The flow rate of the source. Units are kg/s if component is "water", or J/s if component is "energy".
+        cells : Optional[List[int]], default=None
+            A list of cell indices where the source will be placed. Either this or `coordinates_file` must be provided.
+        coordinates_file : Optional[str], default=None
+            A file containing spatial coordinates for determining the cells of the sources.
+            If provided, the function reads this file to determine the `cells` list.
+        component : str, default="water"
+            "water" or "energy"
+
+        Raises:
+        -------
+        ValueError:
+            If neither `cells` nor `coordinates_file` is provided.
+
+        Notes:
+        ------
+        - If `coordinates_file` is given, the function uses `self._cells_from_file()` to extract the corresponding cells.
+        - The function iterates through the `cells` list, adding metadata for each source to `self.source_terms`.
         """
         if (cells is None) and (coordinates_file is None):
             raise ValueError("Missing cell information. Provide either cells: List[int] or coordinates_file: str argument")
@@ -396,10 +562,23 @@ class LocationOptimizer:
                 for future in as_completed(futures):
                     progress.update(1)
 
-    def list_run_output_files(self) -> List[Path]: # TODO drop?
+    def list_run_output_files(self) -> List[Path]:
+        """
+        Returns a list of the Waiwera HDF5 output files (if any)
+        """
         return list(self.output_dir.glob("*.h5"))
 
     def compute_loss(self, loss_function: Callable):
+        """
+        Applies `loss_function` to every run computed during the simulation phase. The function
+        should have a signature like `loss_function(run: WaiweraRun) -> float`. The return values 
+        are collected to a list and finally added to the `self.meta` DataFrame.
+
+        Parameters:
+        -----------
+        loss_function : Callable
+            a function with a signature like `f(run: WaiweraRun) -> float`
+        """
         if self.meta is None:
             raise ValueError("TODO no meta")
         calculated_loss = []
@@ -416,6 +595,11 @@ class LocationOptimizer:
         """
         Perform a run with each set of parameters in `self.run_params`. The runs can then be accessed 
         from the self.runs list
+        
+        Parameters:
+        -----------
+        nproc : int, default=4
+            Number of processes used by Waiwera
         """
         self.output_run_files()
         self._sequential_run(nproc=nproc)
@@ -423,8 +607,11 @@ class LocationOptimizer:
     def adjust_timesteps(self, step_size: int, n_steps: int) -> None:
         """
         Adjust the timesteps for the production simulation. Disables adaptable timestepping.
-        step_size : int time step in seconds
-        n_steps : int number of time steps
+
+        Parameters:
+        -----------
+        step_size : int, time step in seconds
+        n_steps : int, number of time steps
         """
         time = {
             'step': {
