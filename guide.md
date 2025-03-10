@@ -2,11 +2,16 @@
 
 ## Introduction
 
-TODO
+The goal of the optimizer is to enable the user to simulate geothermal systems with various different configurations and evaluate the results to find the optimal setup. The workflow in simple terms is as follows:
+- Find the natural state. This is outside the scope of this guide, consult the [Waiwera documentation](https://waiwera.readthedocs.io/en/latest/)
+- Define all source/sink configurations you would like to evaluate
+- Run the simulation
+- Define an evaluation function and apply to optimizer
 
 ## Setup
 
 The GeoModel Borehole optimizer package can be installed in a Python environment with pip:
+
 pip install geomodel_optimizer
 
 This will install all the required packages. It is recommended to do this in a virtual environment.
@@ -139,4 +144,18 @@ opt.moving_sink(rate=100, coordinates_file='sinks.txt')
 opt.moving_source(rate=100, coordinates_file='sources.txt')
 ```
 After calling both methods, both the `opt.sink_terms` and `opt.source_terms` will be populated. When `output_run_files` or `execute` is called the product of both lists will be used to create the run files. If the file `sinks.txt` contains *N* locations and the file `sources.txt` contains *M* locations there will be *N*x*M* runs. 
-If you want a more complex optimization with variable rates or very specific combinations of sink and source parameters you can use the `add_run` method of the LocationOptimizer. 
+
+If you want a more complex optimization with variable rates or very specific combinations of sink and source parameters you can use the `add_run` method of the LocationOptimizer:
+```
+def add_run(self, 
+        source_idx: Optional[int] = None, 
+        sink_idx: Optional[int] = None, 
+        source_rate: Optional[float] = None,
+        sink_rate: Optional[float] = None, 
+        source_enthalpy: float = 84e3, 
+        source_component: str = "water", 
+        sink_component: str = "water", 
+        **unused
+    ) -> None:
+    ...
+```
