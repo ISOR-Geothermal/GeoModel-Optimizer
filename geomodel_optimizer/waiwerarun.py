@@ -57,7 +57,7 @@ class WaiweraRun:
         return run
 
     @classmethod
-    def run_from_dict(cls, params: dict, json_file: str, num_processes=2):
+    def run_from_dict(cls, params: dict, json_file: str, num_processes=2, meta: Optional[dict] = None):
         timestamp = Timestamp.now()
         with open(json_file, "w") as f:
             json.dump(params, f, indent=4)
@@ -70,7 +70,7 @@ class WaiweraRun:
         t = cls.get_temperature(h5_name, -1)
         p = cls.get_pressure(h5_name, -1)
 
-        run = WaiweraRun(params, json_file, t, p, timestamp)
+        run = WaiweraRun(params, json_file, t, p, timestamp, meta=meta)
         return run
 
     @classmethod
@@ -112,7 +112,12 @@ class WaiweraRun:
         return mesh
 
     def __repr__(self):
-        r = f"WaiweraRun [{self.timestamp}]"
+        if not self.meta:
+            r = f"WaiweraRun [{self.timestamp}]"
+        else:
+            r = f"WaiweraRun [{self.meta['run_name']}]"
+
+        # r = f"WaiweraRun
         return r
     
     @staticmethod
@@ -132,6 +137,14 @@ class WaiweraRun:
     @staticmethod
     def get_pressure(filename: str, timestep: int):
         return WaiweraRun.get_values("fluid_pressure", filename, timestep)
+
+    @contextlib.contextmanager
+    def open(self):
+        data = h5py.File(self.h5_path)
+        try:
+            yield data
+        finally:
+            data.close()
 
 
 class NullOutput:
