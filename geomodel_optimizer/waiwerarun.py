@@ -74,14 +74,14 @@ class WaiweraRun:
         return run
 
     @classmethod
-    def from_file(cls, h5_filename: str, json_filename: str):
+    def from_file(cls, h5_filename: str, json_filename: str, meta: Optional[dict] = None):
         with open(json_filename) as f:
             params = json.load(f)
         t = cls.get_temperature(h5_filename, timestep=-1)
         p = cls.get_pressure(h5_filename, timestep=-1)
         timestamp = Timestamp.now()
 
-        run = WaiweraRun(params, json_filename, t, p, timestamp)
+        run = WaiweraRun(params, json_filename, t, p, timestamp, meta=meta)
         return run
 
     def plots(self, value: str = "temperature", depth=0):

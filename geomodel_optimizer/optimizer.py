@@ -580,9 +580,9 @@ class LocationOptimizer:
             a function with a signature like `f(run: WaiweraRun) -> float`
         """
         if self.meta is None:
-            raise ValueError("TODO no meta")
+            raise ValueError("No metadata found. Has .execute() been called?")
         calculated_loss = []
-        for run in self.runs:
+        for run in tqdm(self.runs):
             # loss = run.execute_function(loss_function)
             loss = loss_function(run)
             calculated_loss.append(loss)
@@ -603,6 +603,7 @@ class LocationOptimizer:
         """
         self.output_run_files()
         self._sequential_run(nproc=nproc)
+        self.meta.to_csv(f"{self.workdir}/meta.csv")
 
     def adjust_timesteps(self, step_size: int, n_steps: int) -> None:
         """
@@ -622,3 +623,23 @@ class LocationOptimizer:
             'stop': step_size * n_steps
         }
         self.base_input["time"] = time
+
+    def _select(self, cond) -> DataFrame:
+        keep = self.meta.mask(cond).isna()
+        keep = keep.json_file
+        return self.meta[keep]
+
+    def run_by_sink_index(self, index: int) -> List[WaiweraRun]:
+        select = self.meta[self.meta.sink_idx.eq(index)]
+        if select.empty:
+            return []
+
+        runs = []
+        for item in select.itertuples():
+            runs.append(self.runs[item.run_index])
+        return runs
+
+    @classmethod
+    def from_workdir(cls, workdir: str):
+        raise NotImplemented
+
