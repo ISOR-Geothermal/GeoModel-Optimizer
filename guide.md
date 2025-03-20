@@ -137,6 +137,9 @@ Attributes:
 - `h5_path`: Path to the Waiwera output HDF5
 
 ## More complex optimizations
+
+### Moving sink and moving source
+
 If we want to optimize with both a moving sink and a moving source, this can be accomplished with sequential calls to those methods:
 
 ```
@@ -144,6 +147,8 @@ opt.moving_sink(rate=100, coordinates_file='sinks.txt')
 opt.moving_source(rate=100, coordinates_file='sources.txt')
 ```
 After calling both methods, both the `opt.sink_terms` and `opt.source_terms` will be populated. When `output_run_files` or `execute` is called the product of both lists will be used to create the run files. If the file `sinks.txt` contains *N* locations and the file `sources.txt` contains *M* locations there will be *N*x*M* runs. 
+
+### Arbitrary runs
 
 If you want a more complex optimization with variable rates or very specific combinations of sink and source parameters you can use the `add_run` method of the LocationOptimizer:
 ```
@@ -159,3 +164,7 @@ def add_run(self,
     ) -> None:
     ...
 ```
+Calling this once adds a run with the specified parameters to the schedule. 
+Using this method you can add any combination of parameters to your simulation.
+
+Following this guide is an annotated usage example. It shows the optimizer being used to evaluate placement of wells in a synthetic reservoir.

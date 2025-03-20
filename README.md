@@ -4,8 +4,8 @@ This borehole location optimizer was developed as part of the [GeoModel](https:/
 
 # Guide
 
-A detailed user's guide is contained in [guide.md](guide.md)
+A detailed user's guide is contained in [guide.md](guide.md). 
 
 # License
 
-TODO
+MIT license
