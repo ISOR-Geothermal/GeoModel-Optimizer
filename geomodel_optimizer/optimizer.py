@@ -35,6 +35,7 @@ class LocationOptimizer:
 
         self.source_terms: List[dict] = [] # info about sources added to base params
         self.sink_terms: List[dict] = [] # info about sinks added to base params
+        self.standalone_runs: List[dict] = [] # runs added with add_run
         self.combined_terms: List[dict] = [] # product of sink and source terms, generated when run files are output
 
         self.run_params: List[dict] = [] # run parameters in dict form
@@ -51,7 +52,6 @@ class LocationOptimizer:
                 source_enthalpy: float = 84e3,
                 source_component: str = "water",
                 sink_component: str = "water",
-                **unused
                 ) -> None:
         """
         Adds a run configuration to the simulation by defining a source, a sink, or both.
@@ -74,8 +74,6 @@ class LocationOptimizer:
             Component type at the source, "water" or "energy".
         sink_component : str, default="water"
             Component type at the sink, "water" or "energy".
-        **unused : dict
-            Additional unused keyword arguments.
 
         Raises:
         -------
@@ -91,6 +89,34 @@ class LocationOptimizer:
         - If a source is specified, it is added using `self.add_source()`.
         - The modified parameters are appended to `self.run_params`.
         """
+        if (source_idx is None) and (sink_idx is None):
+            raise ValueError("Must have at least a source or a sink")
+        
+        params = deepcopy(self.base_input)
+        if sink_idx is not None: # sink_idx can be 0
+            assert sink_rate is not None, f"must provide a sink rate along with sink_idx {sink_idx}"
+            self.add_sink(params=params, cell=sink_idx, rate=sink_rate, component=sink_component)
+        
+        if source_idx is not None:
+            assert source_rate is not None, f"must provide a source rate along with source_idx {source_idx}"
+            self.add_source(params=params, cell=source_idx, rate=source_rate, enthalpy=source_enthalpy, component=source_component)
+
+        terms = vars()
+        terms.pop("self")
+        terms.pop("params")
+        
+        self.standalone_runs.append(terms)
+
+    def _commit_run(self, 
+                source_idx: Optional[int] = None, 
+                sink_idx: Optional[int] = None, 
+                source_rate: Optional[float] = None,
+                sink_rate: Optional[float] = None, 
+                source_enthalpy: float = 84e3,
+                source_component: str = "water",
+                sink_component: str = "water",
+                **unused
+                ) -> None:
         if (source_idx is None) and (sink_idx is None):
             raise ValueError("Must have at least a source or a sink")
         
@@ -461,9 +487,9 @@ class LocationOptimizer:
         """
         # if only either source or sink terms exist nothing needs to be done
         if len(self.source_terms) == 0:
-            return self.sink_terms
+            return self.sink_terms + self.standalone_runs
         if len(self.sink_terms) == 0:
-            return self.source_terms
+            return self.source_terms + self.standalone_runs
         
         # else we need to create a product of all terms
         combined_terms = []
@@ -471,6 +497,8 @@ class LocationOptimizer:
             combined = source.copy()
             combined.update(sink)
             combined_terms.append(combined)
+
+        combined_terms += self.standalone_runs
 
         return combined_terms
 
@@ -493,7 +521,7 @@ class LocationOptimizer:
         """
         self.combined_terms = self._get_combined_terms()
         for terms in self.combined_terms:
-            self.add_run(**terms)
+            self._commit_run(**terms)
 
         run_file_paths = []
         metadata = [] # gather meta information to be made into a dataframe
