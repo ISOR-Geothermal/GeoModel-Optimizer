@@ -4,7 +4,7 @@ import layermesh.mesh as lm
 from pandas import DataFrame
 import json
 import shutil
-from typing import Tuple, Optional, List, Callable
+from typing import Tuple, Optional, List, Callable, Any
 from pathlib import Path
 from copy import deepcopy
 from tqdm import tqdm
@@ -32,6 +32,7 @@ class LocationOptimizer:
         self.base_input = base_input
 
         self.meta: Optional[DataFrame] = None # metadata about runs
+        self._meta: list[dict[str, Any]] | None = None
 
         self.source_terms: List[dict] = [] # info about sources added to base params
         self.sink_terms: List[dict] = [] # info about sinks added to base params
@@ -41,6 +42,8 @@ class LocationOptimizer:
         self.run_params: List[dict] = [] # run parameters in dict form
         self.run_file_paths: List[str] = [] # path to json files directly run by waiwera
         self.runs: List[WaiweraRun] = [] # completed runs
+
+        self._run_counter: int = 1 # for keeping track of runs added with `add_run`
 
         self.YEAR_IN_SECONDS = 365 * 24 * 3600
 
@@ -104,6 +107,17 @@ class LocationOptimizer:
         terms = vars()
         terms.pop("self")
         terms.pop("params")
+
+        name = f"run_{self._run_counter}"
+        terms["run_name"] = name
+        self._run_counter += 1
+
+        if source_idx:
+            source_coords = self.mesh.cell[source_idx].centre
+            terms["source_coords"] = source_coords
+        if sink_idx:
+            sink_coords = self.mesh.cell[sink_idx].centre
+            terms["sink_coords"] = sink_coords
         
         self.standalone_runs.append(terms)
 
@@ -503,6 +517,10 @@ class LocationOptimizer:
         return combined_terms
 
     def _get_run_name(self, meta: dict) -> str:
+        predefined_name = meta.get("run_name", None)
+        if predefined_name:
+            return predefined_name
+
         sink_name = meta.get("sink_name", "")
         source_name = meta.get("source_name", "")
 
@@ -511,6 +529,8 @@ class LocationOptimizer:
             name = name[1:]
         if name.endswith("_"):
             name = name[:-1]
+        if name == "":
+            raise ValueError("failed to assign name")
         return name
 
     def output_run_files(self):
@@ -519,9 +539,9 @@ class LocationOptimizer:
         used by Waiwera. Also creates the self.meta DataFrame that holds information
         about run parameters
         """
-        self.combined_terms = self._get_combined_terms()
+        self.combined_terms = self._get_combined_terms() # populates self.combined_terms
         for terms in self.combined_terms:
-            self._commit_run(**terms)
+            self._commit_run(**terms) # adds to self.run_params
 
         run_file_paths = []
         metadata = [] # gather meta information to be made into a dataframe
@@ -542,6 +562,7 @@ class LocationOptimizer:
             metadata.append(meta)
 
         self.run_file_paths = run_file_paths
+        self._meta = metadata
         self.meta = self._generate_info_df(metadata)
 
     def _generate_info_df(self, meta: List[dict]) -> DataFrame:
