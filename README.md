@@ -4,7 +4,7 @@ This borehole location optimizer was developed as part of the [GeoModel](https:/
 
 # Guide
 
-A detailed user's guide is contained in [guide.md](https://github.com/ISOR-Geothermal/GeoModel-Optimizer/guide.md). 
+A detailed user's guide is contained in [guide.md](https://github.com/ISOR-Geothermal/GeoModel-Optimizer/blob/master/guide.md). 
 
 # License
 
